@@ -301,7 +301,7 @@ if prompt == "Log-in":
                 except:
                     st.error('No input at Business Location tab to proceed')
                 query2 = 'SELECT * from financialAssistance_temp'
-                values_df = pd.read_sql_query(query1, conn)
+                values_df = pd.read_sql_query(query2, conn)
                 try:
                     st.dataframe(values_df)
                     data = values_df.to_csv().encode('utf-8')
