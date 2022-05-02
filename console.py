@@ -21,6 +21,19 @@ def create_usertable():
     c.execute('CREATE TABLE IF NOT EXISTS userstable(username TEXT,password TEXT)')
 
 
+def create_businessloc():
+    c.execute('CREATE TABLE IF NOT EXISTS businessloc(username TEXT, classification TEXT, queries TEXT, answers TEXT)')
+
+
+def create_fs():
+    c.execute('CREATE TABLE IF NOT EXISTS financialAssessment(username TEXT, capital REAL, income REAL)')
+
+
+def create_createfa():
+    c.execute('CREATE TABLE IF NOT EXISTS financialAssistance(username TEXT, fa_capital REAL, fa_income REAL, '
+              'fa_loan REAL, fa_duration REAL, frequency TEXT)')
+
+
 def add_userdata(username, password):
     c.execute('INSERT INTO userstable(username,password) VALUES (?,?)', (username, password))
     conn.commit()
@@ -41,22 +54,23 @@ if prompt == "Log-in":
     password = st.sidebar.text_input("Password:", type='password')
     if st.sidebar.checkbox('Confirm Log-in'):
         create_usertable()
-        result = login_user(username, password)
-        if result:
+        login = login_user(username, password)
+        if login:
             st.sidebar.success("Welcome back: {}".format(username))
             st.sidebar.header('Foodhunan Options:')
-            bttn_bpt = st.sidebar.checkbox('Business Personality Assessment')
+            bttn_bpt = st.sidebar.checkbox('Business Location Assessment')
             bttn_fs = st.sidebar.checkbox('Financial Assessment')
             bttn_fa = st.sidebar.checkbox('Financial Assistance (Loans)')
+            bttn_sv = st.sidebar.checkbox('Save All Data')
 
             if bttn_bpt:
-                st.header('Business Personality')
+                st.header('Business Location')
                 with st.form(key='analyzer'):
                     st.subheader('Foot Traffic')
                     bp1 = st.radio('There are volume of people passing by and enters my small eatery business.',
                                    list(options.keys()))
                     st.subheader('Demographics')
-                    bp2 = st.radio('The location of my small eatery is nearby the are of my customers.',
+                    bp2 = st.radio(f"The location of my small eatery is nearby my customer's area",
                                    list(options.keys()))
                     st.subheader('Proximity')
                     bp3 = st.radio('The location of my small eatery is within the area suitable for my business.',
@@ -77,17 +91,18 @@ if prompt == "Log-in":
                                   'Proximity',
                                   'Competitors',
                                   'Result of Analyzer']
-                questions = ['There are volume of people passing by and enters my small eatery business.',
-                             'The location of my small eatery is nearby the are of my customers.',
-                             'The location of my small eatery is within the area suitable for my business.',
-                             'There are no other carinderias located near to the location of my small eatery business.',
-                             'Recommendation']
+                questions = [f"There are volume of people passing by and enters my small eatery business.",
+                             f"The location of my small eatery is nearby my customer's area",
+                             f"The location of my small eatery is within the area suitable for my business.",
+                             f"There are no other carinderias located near to the location of my small eatery business.",
+                             f"Recommendation"]
 
                 if show:
                     recomm = _showrecom(ft, dm, px, cp)
                     answers = [bp1, bp2, bp3, bp4, recomm]
 
                     to_df = [classification, questions, answers]
+
                     result = pd.DataFrame(to_df).transpose()
                     result.columns = ['Classification',
                                       'Queries',
@@ -96,9 +111,11 @@ if prompt == "Log-in":
                     st.download_button(
                         label="Download data as CSV",
                         data=file,
-                        file_name='Result.csv',
+                        file_name='Business_Location.csv',
                         mime='text/csv',
                     )
+                    result.to_sql('businessloc_temp', conn, if_exists='replace', index=False)
+
             if bttn_fs:
                 st.header('Financial Statement')
                 with st.form(key='Analyzer_fs'):
@@ -106,17 +123,22 @@ if prompt == "Log-in":
                     income = st.number_input('Average Income per Month: ')
                     submit = st.form_submit_button(label='See Result')
                 if submit:
-                    _compare(capital, income)
+                    message = _compare(capital, income)
+                    if message == 'Bad Financial Status':
+                        st.info(
+                            'View Financial Assistance Recommendations in Financial Assistance Tab to help you in managing your '
+                            'eatery business.')
             if bttn_fa:
                 with st.form(key='analyzer_fa'):
                     fa_capital = st.number_input('Average Capital per Month: ')
                     fa_income = st.number_input('Average Income per Month: ')
-                    fa_loan = st.number_input('Desired Loan: ')
+                    fa_loan = st.number_input('Desired Loan (PHP): ')
                     fa_duration = st.number_input('Desired Duration of Loan (months): ')
                     fa_mode = st.radio('Frequency of Payment: ', list(mode.keys()))
                     modality = mode[fa_mode]
                     compute = st.form_submit_button(label='Compute Loan Details')
                 if compute:
+                    _compare(fa_capital, fa_income)
                     col1, col2 = st.columns(2)
                     with col1:
                         st.header("P3 Program")
@@ -125,13 +147,13 @@ if prompt == "Log-in":
                             st.error('Not Eligible for Cares2 Program')
                         else:
                             totalValueP3 = round(
-                                         (_computeloanP3(0.025, _modality(modality, fa_duration), fa_loan) * _modality(
-                                             modality,
-                                             fa_duration)),
-                                         2)
+                                (_computeloanP3(0.025, _modality(modality, fa_duration), fa_loan) * _modality(
+                                    modality,
+                                    fa_duration)),
+                                2)
                             monthlyValueP3 = round(_computeloanP3(0.025, _modality(modality, fa_duration), fa_loan), 2)
-                            st.write('Total Loan Value: ', totalValueP3)
-                            st.write('Monthly Loan Value: ', monthlyValueP3)
+                            st.write('Total Loan Payment: ', totalValueP3)
+                            st.write('Loan Payment Per Period: ', monthlyValueP3)
                     with col2:
                         st.header('Cares2 Program:')
                         st.subheader('Cares2 Calculation:')
@@ -141,33 +163,33 @@ if prompt == "Log-in":
                             year = _toYear(fa_duration)
                             rate = _getRate(year)
                             totalValueC2 = round(_computeCares2(fa_loan, fa_duration), 2)
-                            monthlyValueC2 = round((_computeCares2(fa_loan, fa_duration) / _modality(modality, fa_duration)),
-                                           2)
-                            st.write('Total Loan Value: ', totalValueC2)
-                            st.write('Monthly Loan Value: ', monthlyValueC2)
-                    classes = ['P3 Program',
-                               'Cares2 Program']
-                    interestValues = [0.025, rate]
-                    duration = [fa_duration, fa_duration]
-                    totalValues = [totalValueP3, totalValueC2]
-                    monthlyValues = [monthlyValueP3, monthlyValueC2]
+                            monthlyValueC2 = round(
+                                (_computeCares2(fa_loan, fa_duration) / _modality(modality, fa_duration)),
+                                2)
+                            st.write('Total Loan Payment: ', totalValueC2)
+                            st.write('Loan Payment Per Period: ', monthlyValueC2)
+                            classes = ['P3 Program',
+                                       'Cares2 Program']
+                            interestValues = [0.025, rate]
+                            duration = [fa_duration, fa_duration]
+                            totalValues = [totalValueP3, totalValueC2]
+                            monthlyValues = [monthlyValueP3, monthlyValueC2]
 
-                    valuesTo_df = [classes, interestValues, duration, totalValues, monthlyValues]
-                    values_df = pd.DataFrame(valuesTo_df).transpose()
-                    values_df.columns = ['Program',
-                                         'Interest Rate/Service Charge',
-                                         'Loan Duration',
-                                         'Total Payment',
-                                         'Monthly Payment']
+                            valuesTo_df = [classes, interestValues, duration, totalValues, monthlyValues]
+                            values_df = pd.DataFrame(valuesTo_df).transpose()
+                            values_df.columns = ['Program',
+                                                 'Interest Rate/Service Charge',
+                                                 'Loan Duration',
+                                                 'Total Payment',
+                                                 'Monthly Payment']
                     data = values_df.to_csv().encode('utf-8')
                     st.download_button(
                         label="Download data as CSV",
                         data=data,
-                        file_name='Result.csv',
+                        file_name='Financial_Assistance.csv',
                         mime='text/csv',
                     )
-
-
+                    values_df.to_sql('financialAssistance_temp', conn, if_exists='replace', index=False)
                 with st.form(key='programselect'):
                     fa_capital = st.radio('Select Preferred Program: ', ('P3', 'Cares2'))
                     choice = st.form_submit_button(label='Submit Choice')
@@ -183,8 +205,9 @@ if prompt == "Log-in":
                                         modality,
                                         fa_duration)),
                                     2)
-                                monthlyValue = round(_computeloanP3(0.025, _modality(modality, fa_duration), fa_loan),
-                                                     2)
+                                monthlyValue = round(
+                                    _computeloanP3(0.025, _modality(modality, fa_duration), fa_loan),
+                                    2)
                                 st.write('Total Loan Value: ', totalValue)
                                 st.write('Monthly Loan Value: ', monthlyValue)
                             st.subheader('About P3')
@@ -196,9 +219,11 @@ if prompt == "Log-in":
                                 'country’s top 30 poorest provinces. More than 250 microfinancing institutions (MFIs) are '
                                 'accredited by SB Corp to assist in the distribution of the P3 funds to micro-entrepreneurs. ')
                             st.subheader('Qualifications:')
-                            st.write(
-                                'Application Form, Barangay/Municipal Business Permit, DTI Business Name Registration (More '
-                                'than 50,000 of loan), Photocopy of Government-Issued ID, and ID Picture')
+                            st.write('1. Application Form')
+                            st.write('2. Barangay/Municipal Business Permit')
+                            st.write('3. DTI Business Name Registration (More than 50,000 of loan)')
+                            st.write('4. Photocopy of Government-Issued ID')
+                            st.write('5. ID Picture')
                             st.subheader('Requirements:')
                             st.write(
                                 '1. Self-employed or micro-entrepreneur with a legitimate business running for at least one '
@@ -224,39 +249,85 @@ if prompt == "Log-in":
                                 st.write('Monthly Loan Value: ', monthlyValue)
                             st.subheader('About Cares2')
                             st.write(
-                                'The CARES Program is a Php 1 billion Enterprise Rehabilitation Financing (ERF) loan facility '
-                                'under the P3 Program. MSMEs can avail of interest-free loans, helping them recover from the '
+                                'The CARES Program is a Php 1 billion Enterprise Rehabilitation Financing (ERF) loan '
+                                'facility '
+                                'under the P3 Program. MSMEs can avail of interest-free loans, helping them recover '
+                                'from the '
                                 'economic impact of the pandemic.Through this government loan for small businesses, '
                                 'micro-enterprises with an asset size of not more than Php 3 million can borrow Php 10,'
-                                '000 up to Php 200,000. Meanwhile, small enterprises with an asset size of not more than Php 15 '
+                                '000 up to Php 200,000. Meanwhile, small enterprises with an asset size of not more '
+                                'than Php 15 '
                                 'million can borrow a higher loan amount up to Php 500,000.')
                             st.subheader('Qualifications')
                             st.write('1. Make sure the business is 100% Filipino-owned')
                             st.write('2. Must be in operation for at least a year before March 16, 2020')
                             st.write(
-                                '3. Assets should not be over PHP 15 million, excluding the land where the business office or '
+                                '3. Assets should not be over PHP 15 million, excluding the land where the business '
+                                'office or '
                                 'facility is located')
                             st.write(
-                                '4. Affected by the ECQ in Luzon or similar community quarantine areas in Visayas and Mindanao')
+                                '4. Affected by the ECQ in Luzon or similar community quarantine areas in Visayas and '
+                                'Mindanao')
                             st.subheader('Requirements')
                             st.write('1. Accomplished loan application form and signature card')
                             st.write('2. Valid government-issued ID with photo')
                             st.write('3. Barangay certification of business')
                             st.write('4. Proof of permanent business address')
+                        st.subheader('Contact Details:')
+                        st.write('For more information about these loans, you may reach out to Small Business '
+                                 'Corporation contact details:  (632) 8 651-3333 or email '
+                                 'cares@sbgfc.org.ph/sbcorporation@sbgfc.org.ph')
+                        st.write('Cellphone Numbers:')
+                        st.write('Central Luzon (Smart: 0928.768.4674 / Globe: 0956.688.9496)')
+                        st.write('North Luzon (Smart: 0949.712.0802 / Globe: 0956.688.9518)')
+                        st.write('Visayas (Smart: 0921.534.3584 / Globe: 0995.549.2889)')
+                        st.write('Mindanao (Smart: 0949.712.0780 / Globe: 0956.674.0639)')
+                        st.write('Company Address: ')
+                        st.write(
+                            '17th & 18th Floors, 139 Corporate Center, Valero St., Salcedo Village, Makati City '
+                            '1227 Philippines')
+            if bttn_sv:
+                query1 = 'SELECT * from businessloc_temp'
+                result = pd.read_sql_query(query1, conn)
+                try:
+                    st.dataframe(result)
+                    file = result.to_csv().encode('utf-8')
+                    st.download_button(
+                        label="Download data as CSV",
+                        data=file,
+                        file_name='Business_Location.csv',
+                        mime='text/csv',
+                    )
+                except:
+                    st.error('No input at Business Location tab to proceed')
+                query2 = 'SELECT * from financialAssistance_temp'
+                values_df = pd.read_sql_query(query1, conn)
+                try:
+                    st.dataframe(values_df)
+                    data = values_df.to_csv().encode('utf-8')
+                    st.download_button(
+                        label="Download data as CSV",
+                        data=data,
+                        file_name='Financial_Assistance.csv',
+                        mime='text/csv',
+                    )
+                except:
+                    st.error('No input at Financial Assistance tab to proceed')
+
         else:
             st.sidebar.error('Invalid username/password')
 
 if prompt == "Sign-up":
     st.sidebar.subheader("Sign-up")
     new_user = st.sidebar.text_input('Username:')
-    new_password = st.sidebar.text_input('password', type='password')
+    new_password = st.sidebar.text_input('Password', type='password')
     if st.sidebar.checkbox('Read Terms and Agreement'):
-        st.write('Please read these terms and conditions carefully before using Foodhunan mobile application ('
-                 '“website”, "service") operated by Joshua Cruz and Alliah Makinano.')
+        st.write('Please read these terms and conditions carefully before using Foodhunan application operated by '
+                 'Joshua Cruz and Alliah Makinano.')
         st.subheader('Conditions of Use')
         st.write('By using this website, you certify that you have read and reviewed this Agreement and that you '
                  'agree to comply with its terms. If you do not want to be bound by the terms of this Agreement, '
-                 'you are advised to leave the gitwebsite accordingly. [name] only grants use and access of this '
+                 'you are advised to leave the website accordingly. Foodhunan only grants use and access of this '
                  'website, its products, and its services to those who have accepted its terms.')
         st.subheader('Privacy Policy')
         st.write('Before you continue using our mobile application, we advise you to read our terms and conditions '
@@ -306,4 +377,3 @@ if prompt == "Sign-up":
                 add_userdata(new_user, new_password)
                 st.sidebar.success("You have successfully created a foodhunan account!")
                 st.sidebar.info('Proceed to Log-in')
-
