@@ -1,20 +1,3 @@
-"""
-Daryll John Medina
-
-    v1.0: 2022-05-03
-
-    This script hosts the methods for the console of the Streamlit Application
-        Author: Daryll John Medina
-
-
-        Technologies:
-            > Python 3.9.12
-            > See requirements.txt
-
-        Design:
-            -
-"""
-
 import streamlit as st
 
 
@@ -127,7 +110,7 @@ def _compare(var1, var2):
         st.success(message)
     if var1 > var2:
         message = 'Bad Financial Status'
-        st.success(message)
+        st.error(message)
     if var1 == var2:
         message = 'Good Financial Status'
         st.success(message)
@@ -163,7 +146,8 @@ def _computeCares2(p, n):
 
 
 def _toYear(month):
-    return month / 12
+    import numpy as np
+    return np.ceil(month / 12)
 
 
 def _getRate(year):
