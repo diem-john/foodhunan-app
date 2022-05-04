@@ -155,6 +155,10 @@ if prompt == "Log-in":
                         st.subheader('Cares2 Calculation:')
                         if _computeCares2(fa_loan, fa_duration) == 0 or fa_loan < 10000 or fa_loan > 200000:
                             st.error('Not Eligible for Cares2 Program')
+                            totalValueC2 = 'Not Eligible'
+                            monthlyValueC2 = 'Not Eligible'
+                            rate = 'Not Eligible'
+                            fa_duration = 'Not Eligible'
                         else:
                             year = _toYear(fa_duration)
                             rate = _getRate(year)
@@ -164,28 +168,28 @@ if prompt == "Log-in":
                                 2)
                             st.write('Total Loan Payment: ', totalValueC2)
                             st.write('Loan Payment Per Period: ', monthlyValueC2)
-                            classes = ['P3 Program',
+                        classes = ['P3 Program',
                                        'Cares2 Program']
-                            interestValues = [0.025, rate]
-                            duration = [fa_duration, fa_duration]
-                            totalValues = [totalValueP3, totalValueC2]
-                            monthlyValues = [monthlyValueP3, monthlyValueC2]
+                        interestValues = [0.025, rate]
+                        duration = [fa_duration, fa_duration]
+                        totalValues = [totalValueP3, totalValueC2]
+                        monthlyValues = [monthlyValueP3, monthlyValueC2]
 
-                            valuesTo_df = [classes, interestValues, duration, totalValues, monthlyValues]
-                            values_df = pd.DataFrame(valuesTo_df).transpose()
-                            values_df.columns = ['Program',
+                        valuesTo_df = [classes, interestValues, duration, totalValues, monthlyValues]
+                        values_df = pd.DataFrame(valuesTo_df).transpose()
+                        values_df.columns = ['Program',
                                                  'Interest Rate/Service Charge',
                                                  'Loan Duration',
                                                  'Total Payment',
                                                  'Monthly Payment']
-                            data = values_df.to_csv().encode('utf-8')
-                            st.download_button(
+                        data = values_df.to_csv().encode('utf-8')
+                        st.download_button(
                                 label="Download data as CSV",
                                 data=data,
                                 file_name='Financial_Assistance.csv',
                                 mime='text/csv',
                             )
-                            values_df.to_sql('financialAssistance_temp', conn, if_exists='replace', index=False)
+                        values_df.to_sql('financialAssistance_temp', conn, if_exists='replace', index=False)
                 with st.form(key='programselect'):
                     program_choice = st.radio('Select Preferred Program: ', ('P3', 'Cares2'))
                     choice = st.form_submit_button(label='Submit Choice')
