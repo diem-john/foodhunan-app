@@ -18,20 +18,7 @@ mode = {'Monthly': 12,
 
 def create_usertable():
     c.execute('CREATE TABLE IF NOT EXISTS userstable(username TEXT,password TEXT)')
-
-
-def create_businessloc():
-    c.execute('CREATE TABLE IF NOT EXISTS businessloc(username TEXT, classification TEXT, queries TEXT, answers TEXT)')
-
-
-def create_fs():
-    c.execute('CREATE TABLE IF NOT EXISTS financialAssessment(username TEXT, capital REAL, income REAL)')
-
-
-def create_createfa():
-    c.execute('CREATE TABLE IF NOT EXISTS financialAssistance(username TEXT, fa_capital REAL, fa_income REAL, '
-              'fa_loan REAL, fa_duration REAL, frequency TEXT)')
-
+    
 
 def add_userdata(username, password):
     c.execute('INSERT INTO userstable(username,password) VALUES (?,?)', (username, password))
@@ -149,7 +136,7 @@ if prompt == "Log-in":
                             p3_rate = 'Not Eligible'
                         else:
                             totalValueP3 = round(
-                                (_computeloanP3(0.025, _modality(modality, fa_duration), fa_loan) * _modality(
+                                (_computeloanP3(p3_rate, _modality(modality, fa_duration), fa_loan) * _modality(
                                     modality,
                                     fa_duration)),
                                 2)
