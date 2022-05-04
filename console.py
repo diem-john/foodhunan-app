@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import os
 import sqlite3
 
 conn = sqlite3.connect('data.db')
@@ -130,21 +129,18 @@ if prompt == "Log-in":
                             'eatery business.')
             if bttn_fa:
                 with st.form(key='analyzer_fa'):
-                    fa_capital = st.number_input('Average Capital per Month: ')
-                    fa_income = st.number_input('Average Income per Month: ')
                     fa_loan = st.number_input('Desired Loan (PHP): ')
                     fa_duration = st.number_input('Desired Duration of Loan (months): ')
                     fa_mode = st.radio('Frequency of Payment: ', list(mode.keys()))
                     modality = mode[fa_mode]
                     compute = st.form_submit_button(label='Compute Loan Details')
                 if compute:
-                    _compare(fa_capital, fa_income)
                     col1, col2 = st.columns(2)
                     with col1:
                         st.header("P3 Program")
                         st.subheader('P3 Calculation:')
                         if fa_loan < 5000 or fa_loan > 200000:
-                            st.error('Not Eligible for Cares2 Program')
+                            st.error('Not Eligible for P3 Program')
                         else:
                             totalValueP3 = round(
                                 (_computeloanP3(0.025, _modality(modality, fa_duration), fa_loan) * _modality(
@@ -182,19 +178,19 @@ if prompt == "Log-in":
                                                  'Loan Duration',
                                                  'Total Payment',
                                                  'Monthly Payment']
-                    data = values_df.to_csv().encode('utf-8')
-                    st.download_button(
-                        label="Download data as CSV",
-                        data=data,
-                        file_name='Financial_Assistance.csv',
-                        mime='text/csv',
-                    )
-                    values_df.to_sql('financialAssistance_temp', conn, if_exists='replace', index=False)
+                            data = values_df.to_csv().encode('utf-8')
+                            st.download_button(
+                                label="Download data as CSV",
+                                data=data,
+                                file_name='Financial_Assistance.csv',
+                                mime='text/csv',
+                            )
+                            values_df.to_sql('financialAssistance_temp', conn, if_exists='replace', index=False)
                 with st.form(key='programselect'):
-                    fa_capital = st.radio('Select Preferred Program: ', ('P3', 'Cares2'))
+                    program_choice = st.radio('Select Preferred Program: ', ('P3', 'Cares2'))
                     choice = st.form_submit_button(label='Submit Choice')
                     if choice:
-                        if fa_capital == 'P3':
+                        if program_choice == 'P3':
                             st.header("P3 Program")
                             st.subheader('P3 Calculation:')
                             if fa_loan < 5000 or fa_loan > 200000:
@@ -235,10 +231,11 @@ if prompt == "Log-in":
                             st.write('6. ID picture')
                             st.write('7. Accomplished DTI P3 loan application form')
                             st.write('8. DTI Business Name Registration Certificate for loans over PHP 50,000')
-                        if fa_capital == 'Cares2':
+                        if program_choice == 'Cares2':
                             st.header('Cares2 Program:')
                             st.subheader('Cares2 Calculation:')
                             if _computeCares2(fa_loan, fa_duration) == 0 or fa_loan < 10000 or fa_loan > 200000:
+                                st.error(_computeCares2(fa_loan, fa_duration))
                                 st.error('Not Eligible for Cares2 Program')
                             else:
                                 totalValue = round(_computeCares2(fa_loan, fa_duration), 2)
