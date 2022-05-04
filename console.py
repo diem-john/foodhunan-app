@@ -137,17 +137,23 @@ if prompt == "Log-in":
                 if compute:
                     col1, col2 = st.columns(2)
                     with col1:
+                        p3_duration = fa_duration
+                        p3_rate = 0.25
                         st.header("P3 Program")
                         st.subheader('P3 Calculation:')
                         if fa_loan < 5000 or fa_loan > 200000:
                             st.error('Not Eligible for P3 Program')
+                            totalValueP3 = 'Not Eligible'
+                            monthlyValueP3 = 'Not Eligible'
+                            p3_duration = 'Not Eligible'
+                            p3_rate = 'Not Eligible'
                         else:
                             totalValueP3 = round(
                                 (_computeloanP3(0.025, _modality(modality, fa_duration), fa_loan) * _modality(
                                     modality,
                                     fa_duration)),
                                 2)
-                            monthlyValueP3 = round(_computeloanP3(0.025, _modality(modality, fa_duration), fa_loan), 2)
+                            monthlyValueP3 = round(_computeloanP3(p3_rate, _modality(modality, fa_duration), fa_loan), 2)
                             st.write('Total Loan Payment: ', totalValueP3)
                             st.write('Loan Payment Per Period: ', monthlyValueP3)
                     with col2:
@@ -170,8 +176,8 @@ if prompt == "Log-in":
                             st.write('Loan Payment Per Period: ', monthlyValueC2)
                         classes = ['P3 Program',
                                        'Cares2 Program']
-                        interestValues = [0.025, rate]
-                        duration = [fa_duration, fa_duration]
+                        interestValues = [p3_rate, rate]
+                        duration = [p3_duration, fa_duration]
                         totalValues = [totalValueP3, totalValueC2]
                         monthlyValues = [monthlyValueP3, monthlyValueC2]
 
