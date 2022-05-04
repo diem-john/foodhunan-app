@@ -18,7 +18,7 @@ mode = {'Monthly': 12,
 
 def create_usertable():
     c.execute('CREATE TABLE IF NOT EXISTS userstable(username TEXT,password TEXT)')
-    
+
 
 def add_userdata(username, password):
     c.execute('INSERT INTO userstable(username,password) VALUES (?,?)', (username, password))
@@ -125,7 +125,7 @@ if prompt == "Log-in":
                     col1, col2 = st.columns(2)
                     with col1:
                         p3_duration = fa_duration
-                        p3_rate = 0.25
+                        p3_rate = 0.025
                         st.header("P3 Program")
                         st.subheader('P3 Calculation:')
                         if fa_loan < 5000 or fa_loan > 200000:
