@@ -284,9 +284,9 @@ if prompt == "Log-in":
                             '17th & 18th Floors, 139 Corporate Center, Valero St., Salcedo Village, Makati City '
                             '1227 Philippines')
             if bttn_sv:
-                query1 = 'SELECT * from businessloc_temp'
-                result = pd.read_sql_query(query1, conn)
                 try:
+                    query1 = 'SELECT * from businessloc_temp'
+                    result = pd.read_sql_query(query1, conn)
                     st.dataframe(result)
                     file = result.to_csv().encode('utf-8')
                     st.download_button(
@@ -297,9 +297,9 @@ if prompt == "Log-in":
                     )
                 except:
                     st.error('No input at Business Location tab to proceed')
-                query2 = 'SELECT * from financialAssistance_temp'
-                values_df = pd.read_sql_query(query2, conn)
                 try:
+                    query2 = 'SELECT * from financialAssistance_temp'
+                    values_df = pd.read_sql_query(query2, conn)
                     st.dataframe(values_df)
                     data = values_df.to_csv().encode('utf-8')
                     st.download_button(
